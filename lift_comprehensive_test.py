@@ -6,12 +6,13 @@
 # Date  : 2025-8-1
 ################################################################
 
+# 发货测试
 # Linear Lift Comprehensive Test Suite
 #
 # Three test phases executed sequentially by default:
-#   1. High-Speed Round-Trip:  max speed, [min, max], 5 minutes, 500Hz CSV
-#   2. High-Frequency Oscillation: 100Hz, mid±0.05m, 5 minutes, 500Hz CSV
-#   3. Durability Test: 80% max speed, [min, max], 2 hours, 50Hz CSV
+#   1. High-Speed Round-Trip:  max speed, [min, max], 5 minutes, 500Hz CSV 高速运动
+#   2. High-Frequency Oscillation: 100Hz, mid±0.05m, 5 minutes, 500Hz CSV 震荡测试
+#   3. Durability Test: 80% max speed, [min, max], 2 hours, 50Hz CSV 耐久性测试
 #
 # Quick Start:
 #   python3 device_test/lift_comprehensive_test.py --url ws://<Your controller ip>:8439
