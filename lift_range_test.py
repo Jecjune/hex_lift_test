@@ -12,18 +12,21 @@
 #
 # Quick Start: python3 device_test/lift_range_test.py --url ws://<Your controller ip>:8439
 
+# 注意：CSV 保存路径！！！！
+CSV_PATH = "/tmp/csv_save/"
+
 import sys
 import os
 import argparse
 import time
 import csv
+from datetime import datetime
 
 import hex_device
 from hex_device import HexDeviceApi
 from hex_device import LinearLift
 from hex_device.motor_base import CommandType
 import numpy as np
-
 
 def main():
     parser = argparse.ArgumentParser(
@@ -72,20 +75,20 @@ def main():
     hex_device.set_log_level(args.log_level)
     print(f"Log level set to: {args.log_level}")
 
-    # Save CSV to device_test/csv_save/
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_dir = os.path.join(script_dir, "csv_save")
+    # Save CSV to csv_save/
+    output_dir = CSV_PATH
     os.makedirs(output_dir, exist_ok=True)
-    csv_path = os.path.join(output_dir, "lift_range_test.csv")
-    print(f"CSV output directory: {output_dir}")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    csv_path = os.path.join(output_dir, f"test_range_{timestamp}.csv")
+    print(f"CSV output: {csv_path}")
 
     # Open CSV file
     csv_file = open(csv_path, 'w', newline='')
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow([
-        'elapsed_s', 'timestamp_s', 'round', 'waypoint_idx',
+        'elapsed_s', 'timestamp_s', 'round',
         'target_pos_m', 'current_pos_m', 'current_speed_pps',
-        'max_speed_pps', 'move_speed_pps', 'min_pos_m', 'max_pos_m'
+        'move_speed_pps'
     ])
 
     # Initialize API
@@ -190,6 +193,9 @@ def main():
                     print("=" * 60)
                     print()
 
+                    # Write min/max position as comment lines in CSV
+                    csv_file.write(f"# min_pos_m={pos_min:.4f}, max_pos_m={pos_max:.4f}\n")
+
                     test_initialized = True
                     test_running = True
                     test_start_time = t_now
@@ -219,14 +225,10 @@ def main():
                         f"{elapsed:.6f}",
                         f"{t_now:.6f}",
                         rounds_completed,
-                        waypoint_idx,
                         f"{waypoints[waypoint_idx]:.6f}" if waypoint_idx < len(waypoints) else "0.000000",
                         f"{current_pos_m:.6f}",
                         f"{current_speed:.1f}" if current_speed is not None else "0.0",
-                        f"{max_speed:.1f}",
-                        f"{move_speed:.1f}",
-                        f"{pos_min:.4f}",
-                        f"{pos_max:.4f}"
+                        f"{move_speed:.1f}"
                     ])
                     total_records += 1
                     last_record_time = t_now
