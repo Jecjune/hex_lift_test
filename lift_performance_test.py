@@ -29,7 +29,7 @@
 import sys
 import os
 # 注意csv保存路径！！！！
-CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "comprehensive_csv_save")
+CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "performance_csv_save")
 
 import argparse
 import time
@@ -380,20 +380,20 @@ def main():
     parser.add_argument(
         '--phase1-duration',
         type=float,
-        default=300.0,
-        help='Duration of phase 1 (high-speed round-trip) in seconds (default: 300 = 5 min)'
+        default=1800.0,
+        help='Duration of phase 1 (high-speed round-trip) in seconds (default: 1800 = 30 min)'
     )
     parser.add_argument(
         '--phase2-duration',
         type=float,
-        default=300.0,
-        help='Duration of phase 2 (high-freq oscillation) in seconds (default: 300 = 5 min)'
+        default=1800.0,
+        help='Duration of phase 2 (high-freq oscillation) in seconds (default: 1800 = 30 min)'
     )
     parser.add_argument(
         '--phase3-duration',
         type=float,
-        default=7200.0,
-        help='Duration of phase 3 (durability) in seconds (default: 7200 = 2 hours)'
+        default=36000.0,
+        help='Duration of phase 3 (durability) in seconds (default: 36000 = 10 hours)'
     )
     args = parser.parse_args()
 
@@ -426,7 +426,7 @@ def main():
         test_configs.append(TestConfig(
             name="1_HighSpeed_RoundTrip",
             duration_s=args.phase1_duration,
-            record_hz=500,
+            record_hz=100,
             speed_ratio=1.0,  # max speed
             csv_path=os.path.join(output_dir, "test_1_high_speed_round_trip.csv"),
             test_type='roundtrip'
@@ -436,7 +436,7 @@ def main():
         test_configs.append(TestConfig(
             name="2_HighFreq_Oscillation",
             duration_s=args.phase2_duration,
-            record_hz=500,
+            record_hz=100,
             speed_ratio=1.0,  # max speed for fast response
             csv_path=os.path.join(output_dir, "test_2_high_freq_oscillation.csv"),
             test_type='oscillation'
@@ -446,7 +446,7 @@ def main():
         test_configs.append(TestConfig(
             name="3_Durability",
             duration_s=args.phase3_duration,
-            record_hz=50,
+            record_hz=10,
             speed_ratio=0.8,  # 80% max speed
             csv_path=os.path.join(output_dir, "test_3_durability.csv"),
             test_type='durability'
