@@ -21,12 +21,15 @@ import argparse
 import time
 import csv
 from datetime import datetime
+from urllib.parse import urlparse
 
 import hex_device
 from hex_device import HexDeviceApi
 from hex_device import LinearLift
 from hex_device.motor_base import CommandType
 import numpy as np
+
+from utils.controller_id_capture import find_hostname_by_ip_live
 
 def main():
     parser = argparse.ArgumentParser(
@@ -72,6 +75,19 @@ def main():
     )
     args = parser.parse_args()
 
+    # Extract controller IP from WebSocket URL and resolve its hostname
+    parsed_url = urlparse(args.url)
+    controller_ip = parsed_url.hostname or "unknown"
+    print(f"Resolving controller ID for IP: {controller_ip} ...")
+    controller_id = find_hostname_by_ip_live(controller_ip)
+    if controller_id:
+        # Strip .local suffix and trailing dot for a clean id
+        controller_id_short = controller_id.replace(".local", "")
+        print(f"  Controller ID: {controller_id_short}")
+    else:
+        controller_id_short = "unknown"
+        print("  WARNING: Could not resolve controller ID via avahi-browse")
+
     hex_device.set_log_level(args.log_level)
     print(f"Log level set to: {args.log_level}")
 
@@ -92,6 +108,7 @@ def main():
     ])
 
     # Initialize API
+    hex_device.set_log_level('WARNING')
     api = HexDeviceApi(ws_url=args.url, control_hz=500, enable_kcp=True, local_port=0)
 
     # State tracking
@@ -195,6 +212,7 @@ def main():
 
                     # Write min/max position as comment lines in CSV
                     csv_file.write(f"# min_pos_m={pos_min:.4f}, max_pos_m={pos_max:.4f}\n")
+                    csv_file.write(f"# controller_id={controller_id_short}\n")
 
                     test_initialized = True
                     test_running = True

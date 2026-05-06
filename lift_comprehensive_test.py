@@ -18,8 +18,6 @@
 #
 # Start from a specific test:
 #   python3 device_test/lift_comprehensive_test.py --url ws://<ip>:8439 --start-from 2
-# Start from a specific test and save to a specific folder:
-#   python3 device_test/lift_comprehensive_test.py --url ws://<ip>:8439 --start-from 2 --csv-folder test_20260506_120000
 # Start for different test durations:
 #   python3 device_test/lift_comprehensive_test.py --url ws://<ip>:8439 --phase1-duration 10 --phase2-duration 10 --phase3-duration 10
 
@@ -30,16 +28,22 @@
 
 import sys
 import os
+# 注意csv保存路径！！！！
+CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "csv_save")
+
 import argparse
 import time
 import csv
 import datetime
+from urllib.parse import urlparse
 
 import hex_device
 from hex_device import HexDeviceApi
 from hex_device import LinearLift
 from hex_device.motor_base import CommandType
 import numpy as np
+
+from utils.controller_id_capture import find_hostname_by_ip_live
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +118,7 @@ class TestConfig:
         self.test_type = test_type  # 'roundtrip', 'oscillation', 'durability'
 
 
-def run_test_phase(api, config, lift_device):
+def run_test_phase(api, config, lift_device, controller_id="unknown"):
     """
     Run a single test phase.
     Returns True if test completed successfully, False on error.
@@ -139,6 +143,7 @@ def run_test_phase(api, config, lift_device):
 
     # Write min/max position as a single metadata comment row
     csv_file.write(f"# min_pos_m={pos_min:.4f}, max_pos_m={pos_max:.4f}\n")
+    csv_file.write(f"# controller_id={controller_id}\n")
     pulse_per_meter = device.get_pulse_per_meter()
 
     if max_speed is None or max_speed <= 0:
@@ -371,13 +376,6 @@ def main():
         default=1,
         help='Test phase to start from (1, 2, or 3). Default: 1 (run all three sequentially)'
     )
-    parser.add_argument(
-        '--csv-folder',
-        type=str,
-        default=None,
-        help='Folder name for CSV output under csv_save/. '
-             'Default: auto-generated timestamp folder (e.g. test_suite_20250801_120000)'
-    )
     # Phase-specific durations (for debugging / custom runs)
     parser.add_argument(
         '--phase1-duration',
@@ -399,17 +397,25 @@ def main():
     )
     args = parser.parse_args()
 
+    # Extract controller IP from WebSocket URL and resolve its hostname
+    parsed_url = urlparse(args.url)
+    controller_ip = parsed_url.hostname or "unknown"
+    print(f"Resolving controller ID for IP: {controller_ip} ...")
+    controller_id = find_hostname_by_ip_live(controller_ip)
+    if controller_id:
+        # Strip .local suffix and trailing dot for a clean id
+        controller_id_short = controller_id.replace(".local", "")
+        print(f"  Controller ID: {controller_id_short}")
+    else:
+        controller_id_short = "unknown"
+        print("  WARNING: Could not resolve controller ID via avahi-browse")
+
     hex_device.set_log_level(args.log_level)
     print(f"Log level set to: {args.log_level}")
 
     # ---- Output directory ----
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    base_dir = os.path.join(script_dir, "csv_save")
-    if args.csv_folder:
-        folder_name = args.csv_folder
-    else:
-        folder_name = datetime.datetime.now().strftime("test_suite_%Y%m%d_%H%M%S")
-    output_dir = os.path.join(base_dir, folder_name)
+    folder_name = datetime.datetime.now().strftime("test_suite_%Y%m%d_%H%M%S")
+    output_dir = os.path.join(CSV_PATH, folder_name)
     os.makedirs(output_dir, exist_ok=True)
     print(f"Output directory: {output_dir}")
 
@@ -504,7 +510,7 @@ def main():
     # ---- Run tests sequentially ----
     all_passed = True
     for config in test_configs:
-        success = run_test_phase(api, config, lift_device)
+        success = run_test_phase(api, config, lift_device, controller_id_short)
         if not success:
             print(f"\nTest '{config.name}' FAILED or was interrupted.")
             all_passed = False
