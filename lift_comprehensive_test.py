@@ -18,6 +18,10 @@
 #
 # Start from a specific test:
 #   python3 device_test/lift_comprehensive_test.py --url ws://<ip>:8439 --start-from 2
+# Start from a specific test and save to a specific folder:
+#   python3 device_test/lift_comprehensive_test.py --url ws://<ip>:8439 --start-from 2 --csv-folder test_20260506_120000
+# Start for different test durations:
+#   python3 device_test/lift_comprehensive_test.py --url ws://<ip>:8439 --phase1-duration 10 --phase2-duration 10 --phase3-duration 10
 
 # CSV reading tips:
 # The pos range is in the first line of the csv file, like this:
